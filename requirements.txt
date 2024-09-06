@@ -6,5 +6,4 @@ PyPDF2
 pandas
 scikit-learn
 streamlit-pagination
-zipfile
 base64
