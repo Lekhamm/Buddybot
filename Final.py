@@ -15,11 +15,11 @@ import streamlit_pagination as stp
 import zipfile
 
 # Azure AD app details
-client_id = '57fd5a4a-d98f-4c99-b666-a37e03eafd1c'
-client_secret = 'qWE8Q~9.EkHqSRXyr8SzY9SAHUi2EvW7HvPYocTA'
-tenant_id = '0ccf5041-a4b0-43b7-b7aa-5b08eda3b2b1'
+client_id = st.secrets["CLIENT_ID"]
+client_secret = st.secrets["CLIENT_SECRET"]
+tenant_id = st.secrets["TENANT_ID"]
 authority_url = f'https://login.microsoftonline.com/{tenant_id}'
-redirect_uri = 'http://localhost:8501'
+redirect_uri = st.secrets["URL"]
 
 # Define the scopes required for accessing SharePoint
 scopes = ['Files.ReadWrite.All', 'Sites.Read.All']
