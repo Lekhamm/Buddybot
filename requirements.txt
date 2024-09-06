@@ -1,8 +1,10 @@
 streamlit
 msal
 requests
-docx
+docx-python
 PyPDF2
 pandas
 scikit-learn
 streamlit-pagination
+zipfile
+base64
