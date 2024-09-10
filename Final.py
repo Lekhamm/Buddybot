@@ -13,13 +13,20 @@ from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime, timedelta
 import streamlit_pagination as stp
 import zipfile
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access environment variables
+client_id = os.getenv('CLIENT_ID')
+client_secret = os.getenv('CLIENT_SECRET')
+tenant_id = os.getenv('TENANT_ID')
+redirect_uri = os.getenv('REDIRECT_URI')
 
 # Azure AD app details
-client_id = st.secrets["CLIENT_ID"]
-client_secret = st.secrets["CLIENT_SECRET"]
-tenant_id = st.secrets["TENANT_ID"]
 authority_url = f'https://login.microsoftonline.com/{tenant_id}'
-redirect_uri = st.secrets["URL"]
 
 # Define the scopes required for accessing SharePoint
 scopes = ['Files.ReadWrite.All', 'Sites.Read.All']
@@ -96,8 +103,40 @@ def download_file(site_id, file_path, headers):
         return download_response.content, file_path.split("/")[-1]
     return None, None
 
+# Function to download all files in a folder and create a zip archive
+def download_folder_as_zip(site_id, folder_path, headers):
+    folder_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{folder_path}:/children"
+    response = requests.get(folder_url, headers=headers)
+    if response.status_code == 200:
+        items = response.json().get('value', [])
+        folder_name = folder_path.split("/")[-1]
+        zip_filename = f"{folder_name}.zip"
+
+        with io.BytesIO() as zip_buffer:
+            with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+                for item in items:
+                    if 'file' in item:  # Only include files, not subfolders
+                        file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{item['id']}/content"
+                        file_response = requests.get(file_url, headers=headers)
+                        if file_response.status_code == 200:
+                            zip_file.writestr(
+                                item['name'], file_response.content)
+            zip_buffer.seek(0)
+            return zip_buffer.read(), zip_filename
+    return None, None
+
+# Function to list accessible sites
+def list_accessible_sites(headers):
+    sites_url = "https://graph.microsoft.com/v1.0/sites?search=*"
+    response = requests.get(sites_url, headers=headers)
+    if response.status_code == 200:
+        sites = response.json().get('value', [])
+        return [(site['name'], site['webUrl']) for site in sites]
+    return []
+
+# Update the search_files function to search recursively
 def search_files(site_id, query, headers):
-    search_url = f"https://graph.microsoft.com/v1.0/sites/{site_info['id']}/drive/root/search(q='{query}')"
+    search_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root/search(q='{query}')"
     response = requests.get(search_url, headers=headers)
     if response.status_code == 200:
         items = response.json().get('value', [])
@@ -135,8 +174,7 @@ def search_answer(question, file_contents):
     # Combine all file contents, keeping track of which document each sentence comes from
     all_content = []
     for doc_name, content in file_contents.items():
-        sentences = [sent.strip()
-                     for sent in content.split('.') if sent.strip()]
+        sentences = [sent.strip() for sent in content.split('.') if sent.strip()]
         all_content.extend([(sent, doc_name) for sent in sentences])
 
     # Separate sentences and document names
@@ -151,12 +189,10 @@ def search_answer(question, file_contents):
     tfidf_matrix = vectorizer.fit_transform(sentences)
 
     # Compute cosine similarity
-    cosine_similarities = cosine_similarity(
-        tfidf_matrix[-1:], tfidf_matrix[:-1])[0]
+    cosine_similarities = cosine_similarity(tfidf_matrix[-1:], tfidf_matrix[:-1])[0]
 
     # Get indices of sentences with a similarity above the threshold
-    relevant_sentence_indices = [i for i, score in enumerate(
-        cosine_similarities) if score > 0.2]
+    relevant_sentence_indices = [i for i, score in enumerate(cosine_similarities) if score > 0.2]
 
     answers_dict = {}
 
@@ -176,7 +212,7 @@ def search_answer(question, file_contents):
     if answers_dict:
         answer = "Here's what I found about your question:\n\n"
         for doc_name, relevant_sentences in answers_dict.items():
-            combined_answer = ' '.join(relevant_sentences)
+            combined_answer = ' '.join(relevant_sentences[:5])  # Limit to 5 sentences
             combined_answer = combined_answer.capitalize()
             if not combined_answer.endswith('.'):
                 combined_answer += '.'
@@ -186,36 +222,13 @@ def search_answer(question, file_contents):
 
     return answer
 
-# Function to download all files in a folder and create a zip archive
-def download_folder_as_zip(site_id, folder_path, headers):
-    folder_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/root:/{folder_path}:/children"
-    response = requests.get(folder_url, headers=headers)
+# Function to download file content
+def download_file_content(site_id, file_id, headers):
+    file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{file_id}/content"
+    response = requests.get(file_url, headers=headers)
     if response.status_code == 200:
-        items = response.json().get('value', [])
-        folder_name = folder_path.split("/")[-1]
-        zip_filename = f"{folder_name}.zip"
-
-        with io.BytesIO() as zip_buffer:
-            with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
-                for item in items:
-                    if 'file' in item:  # Only include files, not subfolders
-                        file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{item['id']}/content"
-                        file_response = requests.get(file_url, headers=headers)
-                        if file_response.status_code == 200:
-                            zip_file.writestr(
-                                item['name'], file_response.content)
-            zip_buffer.seek(0)
-            return zip_buffer.read(), zip_filename
-    return None, None
-
-# New function to list accessible sites
-def list_accessible_sites(headers):
-    sites_url = "https://graph.microsoft.com/v1.0/sites?search=*"
-    response = requests.get(sites_url, headers=headers)
-    if response.status_code == 200:
-        sites = response.json().get('value', [])
-        return [(site['name'], site['webUrl']) for site in sites]
-    return []
+        return response.content
+    return None
 
 # Function to add a message to the chat history
 def add_message(role, content):
@@ -392,11 +405,11 @@ else:
                 
                 if search_results:
                     # Download and read content of relevant files
-                    for item in search_results:
-                        file_content, file_name = download_file(site_info['id'], item['name'], headers)
-                        if file_content and file_name:
-                            content = read_file_content(file_content, file_name)
-                            st.session_state.file_contents[file_name] = content
+                    for item in search_results[:5]:  # Limit to first 5 results for efficiency
+                        file_content = download_file_content(site_info['id'], item['id'], headers)
+                        if file_content:
+                            content = read_file_content(file_content, item['name'])
+                            st.session_state.file_contents[item['name']] = content
                     
                     # Search for answer in the downloaded content
                     answer = search_answer(question, st.session_state.file_contents)
@@ -463,16 +476,6 @@ else:
                     add_message(
                         "assistant", "I'm sorry, the item number you provided does not exist. Please check the item number and try again.")
 
-            elif "no" in prompt.lower():
-                add_message(
-                    "assistant", "Alright! It was great helping you. Have a wonderful day!")
-                time.sleep(2)
-                st.rerun()
-
-            elif "yes" in prompt.lower():
-                add_message(
-                    "assistant", "Please enter your query to search for related files or ask a question starting with 'Question:'")
-
             else:
                 # Handle search queries
                 query = prompt
@@ -482,45 +485,45 @@ else:
 
                 if search_results:
                     search_results_list = [
-                        f"{idx + 1}. {item['name']} (File)" for idx, item in enumerate(search_results)]
+                        f"{idx + 1}. {item['name']} (File)" for idx, item in enumerate(search_results[:10])]  # Limit to first 10 results
                     search_results_dict = {
-                        str(idx + 1): item['id'] for idx, item in enumerate(search_results)}
+                        str(idx + 1): item['id'] for idx, item in enumerate(search_results[:10])}
 
                     st.session_state.search_results_dict = search_results_dict
                     search_results_text = "\n".join(search_results_list)
                     add_message(
-                        "assistant", f"Here are the files related to your query:\n\n{search_results_text}")
+                        "assistant", f"Here are the top files related to your query:\n\n{search_results_text}")
                     add_message(
-                        "assistant", "Please provide the file number to download.")
+                        "assistant", "Please provide the file number to download, or ask another question.")
 
                 else:
                     add_message(
                         "assistant", "No files found related to your query. Please try again with a different query.")
 
-                if st.session_state.get('search_results_dict') and prompt in st.session_state['search_results_dict']:
-                    file_id = st.session_state['search_results_dict'][prompt]
-                    file_info_url = f"https://graph.microsoft.com/v1.0/sites/{site_info['id']}/drive/items/{file_id}"
-                    file_info_response = requests.get(
-                        file_info_url, headers=headers)
+            if st.session_state.get('search_results_dict') and prompt in st.session_state['search_results_dict']:
+                file_id = st.session_state['search_results_dict'][prompt]
+                file_info_url = f"https://graph.microsoft.com/v1.0/sites/{site_info['id']}/drive/items/{file_id}"
+                file_info_response = requests.get(
+                    file_info_url, headers=headers)
 
-                    if file_info_response.status_code == 200:
-                        file_info = file_info_response.json()
-                        file_name = file_info['name']
-                        download_url = file_info['@microsoft.graph.downloadUrl']
-                        file_content = requests.get(download_url).content
-                        add_message(
-                            "assistant", f"Great! I've successfully downloaded '{file_name}' for you.")
+                if file_info_response.status_code == 200:
+                    file_info = file_info_response.json()
+                    file_name = file_info['name']
+                    download_url = file_info['@microsoft.graph.downloadUrl']
+                    file_content = requests.get(download_url).content
+                    add_message(
+                        "assistant", f"Great! I've successfully downloaded '{file_name}' for you.")
 
-                        # Create a download button
-                        b64 = base64.b64encode(file_content).decode()
-                        href = f'<a href="data:application/octet-stream;base64,{b64}" download="{file_name}">Click here to download {file_name}</a>'
-                        st.markdown(href, unsafe_allow_html=True)
+                    # Create a download button
+                    b64 = base64.b64encode(file_content).decode()
+                    href = f'<a href="data:application/octet-stream;base64,{b64}" download="{file_name}">Click here to download {file_name}</a>'
+                    st.markdown(href, unsafe_allow_html=True)
 
-                        add_message(
-                            "assistant", "Is there anything else you'd like to do? (Yes/No)")
-                    else:
-                        add_message(
-                            "assistant", "I'm sorry, I couldn't retrieve the file information. Please try again.")
+                    add_message(
+                        "assistant", "Is there anything else you'd like to do? (Yes/No)")
+                else:
+                    add_message(
+                        "assistant", "I'm sorry, I couldn't retrieve the file information. Please try again.")
 
         # Add a button to clear the conversation
         if st.button("Clear Conversation"):
