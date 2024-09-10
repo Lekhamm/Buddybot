@@ -276,11 +276,9 @@ def display_chat_history():
 if 'auth_code' not in st.session_state:
     if st.button("Authenticate to use the app"):
         auth_url = get_auth_url()
-        st.write(f"Please visit this URL to authenticate: {auth_url}")
-        auth_code = st.text_input("Enter the authentication code:")
-        if auth_code:
-            st.session_state.auth_code = auth_code
-            st.rerun()
+        js_code = f"window.open('{auth_url}')"
+        st.components.v1.html(f"<script>{js_code}</script>")
+        
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
     if headers:
