@@ -14,16 +14,12 @@ from datetime import datetime, timedelta
 import streamlit_pagination as stp
 import zipfile
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Access environment variables
-client_id = os.getenv('CLIENT_ID')
-client_secret = os.getenv('CLIENT_SECRET')
-tenant_id = os.getenv('TENANT_ID')
-redirect_uri = os.getenv('REDIRECT_URI')
+# Access environment variables using Streamlit secrets
+client_id = st.secrets["CLIENT_ID"]
+client_secret = st.secrets["CLIENT_SECRET"]
+tenant_id = st.secrets["TENANT_ID"]
+redirect_uri = st.secrets["REDIRECT_URI"]
 
 # Azure AD app details
 authority_url = f'https://login.microsoftonline.com/{tenant_id}'
@@ -35,7 +31,9 @@ scopes = ['Files.ReadWrite.All', 'Sites.Read.All']
 app = msal.ConfidentialClientApplication(
     client_id,
     authority=authority_url,
-    client_credential=client_secret
+    client_credential=client_secret,
+    token_cache=None,
+    verify=True
 )
 
 # Streamlit UI
@@ -221,7 +219,6 @@ def search_answer(question, file_contents):
         answer = "I'm sorry, but I couldn't find any relevant information to answer your question."
 
     return answer
-
 # Function to download file content
 def download_file_content(site_id, file_id, headers):
     file_url = f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive/items/{file_id}/content"
@@ -274,12 +271,16 @@ def display_chat_history():
                 <div class="timestamp">{msg['timestamp'].strftime('%Y-%m-%d %H:%M:%S')}</div>
             </div>
             """, unsafe_allow_html=True)
-            # Main conversation flow starts here...
+
+# Main conversation flow starts here
 if 'auth_code' not in st.session_state:
     if st.button("Authenticate to use the app"):
         auth_url = get_auth_url()
-        st.query_params["auth_url"] = auth_url
-        st.rerun()
+        st.write(f"Please visit this URL to authenticate: {auth_url}")
+        auth_code = st.text_input("Enter the authentication code:")
+        if auth_code:
+            st.session_state.auth_code = auth_code
+            st.rerun()
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
     if headers:
