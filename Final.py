@@ -214,7 +214,7 @@ def search_answer(question, file_contents):
             combined_answer = combined_answer.capitalize()
             if not combined_answer.endswith('.'):
                 combined_answer += '.'
-            answer += f"*Source: {doc_name}*\n{combined_answer}\n\n"
+            answer += f"**Source: {doc_name}**\n{combined_answer}\n\n"
     else:
         answer = "I'm sorry, but I couldn't find any relevant information to answer your question."
 
@@ -276,11 +276,10 @@ def display_chat_history():
 if 'auth_code' not in st.session_state:
     if st.button("Authenticate to use the app"):
         auth_url = get_auth_url()
-        st.write(f"Please visit this URL to authenticate: {auth_url}")
-        auth_code = st.text_input("Enter the authentication code:")
-        if auth_code:
-            st.session_state.auth_code = auth_code
-            st.rerun()
+        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to Authenticate</a>', unsafe_allow_html=True)
+        #js_code = f"window.open('{auth_url}')"
+        #st.components.v1.html(f"<script>{js_code}</script>")
+        
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
     if headers:
