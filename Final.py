@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import streamlit_pagination as stp
 import zipfile
 import os
+import webbrowser
 
 # Access environment variables using Streamlit secrets
 client_id = st.secrets["CLIENT_ID"]
@@ -37,7 +38,7 @@ app = msal.ConfidentialClientApplication(
 )
 
 # Streamlit UI
-st.title("📂 SharePoint File Downloader and Query Chatbot")
+st.title("📂 Buddy Bot: Your Friendly Companion ")
 
 # Authentication flow
 def get_auth_url():
@@ -276,9 +277,8 @@ def display_chat_history():
 if 'auth_code' not in st.session_state:
     if st.button("Authenticate to use the app"):
         auth_url = get_auth_url()
-        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to Authenticate</a>', unsafe_allow_html=True)
-        #js_code = f"window.open('{auth_url}')"
-        #st.components.v1.html(f"<script>{js_code}</script>")
+        # Use webbrowser to open the URL in a new tab
+        webbrowser.open_new_tab(auth_url)
         
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
@@ -293,7 +293,7 @@ else:
         display_chat_history()
 
         if not st.session_state.messages:
-            add_message("assistant", "Hello! I'm your SharePoint File Downloader and Query Assistant. How can I help you today?")
+            add_message("assistant", "Hello! I'm your Buddy Bot and Query Assistant. How can I help you today?")
             add_message("assistant", "Would you like to view the sites you have access to? (Yes/No)")
 
         # Get user input for viewing sites
@@ -387,7 +387,7 @@ else:
                         "assistant", f"Here are the contents of the SharePoint site '{site_name}':")
                     show_paginated_items(items_list, file_count, folder_count)  # Show items with pagination and counts
                     add_message(
-                        "assistant", "Please provide the item number to view a folder's contents, to download('folder 1') or download a file. Or, ask a question by starting with 'Question:'")
+                        "assistant", "Please provide the item number to view a folder's contents, to download('f:1') or download a file just provide the file number (Eg:5). Or, ask a question by starting with 'Q:'")
             else:
                 add_message(
                     "assistant", "I'm sorry, I couldn't access the SharePoint site. Please check the site name and try again.")
@@ -396,8 +396,8 @@ else:
         if prompt := st.chat_input("You:"):
             add_message("user", prompt)
 
-            if prompt.lower().startswith("question:"):
-                question = prompt[9:].strip()  # Remove "Question:" prefix
+            if prompt.lower().startswith("q:"):
+                question = prompt[2:].strip()  # Remove "Question:" prefix
                 add_message("assistant", f"Searching for an answer to: '{question}'")
                 
                 # Search for relevant files
@@ -417,9 +417,9 @@ else:
                 else:
                     add_message("assistant", "I'm sorry, I couldn't find any relevant files to answer your question.")
 
-            elif prompt.lower().startswith("folder"):
+            elif prompt.lower().startswith("f:"):
                 try:
-                    folder_num = prompt.split()[1]
+                    folder_num = prompt[2:].strip()
 
                     # Check if folder_num exists in items_dict
                     if folder_num in st.session_state.items_dict:
@@ -449,7 +449,7 @@ else:
                             "assistant", f"No folder found with the number {folder_num}. Please check the number and try again.")
                 except IndexError:
                     add_message(
-                        "assistant", "Please specify the folder number after 'folder'. For example: 'folder 2'.")
+                        "assistant", "Please specify the folder number after 'f:'. For example: 'f:2'.")
 
             elif prompt.isdigit() or (prompt.replace('.', '').isdigit() and prompt.count('.') == 1):
                 item_path, item_type = st.session_state.items_dict.get(
