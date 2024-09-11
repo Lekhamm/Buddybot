@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 import streamlit_pagination as stp
 import zipfile
 import os
-import webbrowser
 
 # Access environment variables using Streamlit secrets
 client_id = st.secrets["CLIENT_ID"]
@@ -277,8 +276,7 @@ def display_chat_history():
 if 'auth_code' not in st.session_state:
     if st.button("Authenticate to use the app"):
         auth_url = get_auth_url()
-        # Use webbrowser to open the URL in a new tab
-        webbrowser.open_new_tab(auth_url)
+       st.markdown(f'<a href="{auth_url}" target="_blank">Click here to Authenticate</a>', unsafe_allow_html=True)
         
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
