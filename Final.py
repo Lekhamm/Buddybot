@@ -15,6 +15,127 @@ import streamlit_pagination as stp
 import zipfile
 import os
 
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+    [data-testid=stHeader] {
+        background: linear-gradient(to top, #0e4166 0%, #000000 100%); # for header background
+
+    }
+
+    .stApp{
+        background:#0e4166 ; # whole center background and bottom color
+    }
+
+    [data-testid=stWidgetLabel],[data-testid=stMarkdown] {
+        color:#ffffff;
+    }
+
+    [data-testid=stSidebar] {
+            background:linear-gradient(to top ,#0e4166 93%,#000000 100%); # for sidebar
+
+    }
+
+    .title-container {
+        background: rgba(14, 65, 102, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+        color: #f4a303;
+        font-size: 36px;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 10px;
+    }
+
+    .subtitle {
+        color: #ffffff;
+        font-size: 20px;
+        text-align: center;
+        font-weight: 300;
+    }
+
+    .service-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .service-card {
+        background: #003d59;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .service-icon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
+
+    .service-title {
+        color: #f4a303;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .service-description {
+        color: #f4a303;
+        font-size: 14px;
+
+    }
+
+</style>
+""", unsafe_allow_html=True)
+ 
+ 
+st.markdown("""
+    <div class="title-container">
+        <h1 class="title">Welcome to BuddyBot</h1>
+        <p class="subtitle">Your Friendly Companion</p>
+    </div>
+""", unsafe_allow_html=True)
+col = st.columns((1,1,1))
+with col[0]:
+    st.markdown(f"""
+        <div class="service-card">
+            <div class="service-icon">"🌐"</div>
+            <h3 class="service-title">"Effortless Navigation"</h3>
+            <p class="service-description">"Explore your SharePoint like never before. Browse files, dive into folders, and move back with simple commands. Switch between folder views ."</p>
+        </div>
+    """, unsafe_allow_html=True)
+with col[1]:
+    st.markdown(f"""
+        <div class="service-card">
+            <div class="service-icon">"🌍"</div>
+            <h3 class="service-title">"Instant Downloads"</h3>
+            <p class="service-description">"Need a file? Just type the file number for a direct download. Want the whole folder? No problem! Use f:<number> and download it all as a .zip file in no time."</p>
+        </div>
+    """, unsafe_allow_html=True)
+with col[2]:
+    st.markdown(f"""
+        <div class="service-card">
+            <div class="service-icon">"🖥️"</div>
+            <h3 class="service-title">"Smart Q&A "</h3>
+            <p class="service-description">"Have a question? Start with “Q:” and BuddyBot will search through your SharePoint files for the best answer. Get instant answers and download related files with ease."</p>
+        </div>
+    """, unsafe_allow_html=True)
+
 # Access environment variables using Streamlit secrets
 client_id = st.secrets["CLIENT_ID"]
 client_secret = st.secrets["CLIENT_SECRET"]
