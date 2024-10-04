@@ -332,7 +332,7 @@ def search_answer(question, file_contents):
             combined_answer = combined_answer.capitalize()
             if not combined_answer.endswith('.'):
                 combined_answer += '.'
-            answer += f"**Source: {doc_name}**\n{combined_answer}\n\n"
+            answer += f"*Source: {doc_name}*\n{combined_answer}\n\n"
     else:
         answer = "I'm sorry, but I couldn't find any relevant information to answer your question."
 
@@ -394,8 +394,7 @@ def display_chat_history():
 if 'auth_code' not in st.session_state:
     if st.button("Login"):
         auth_url = get_auth_url()
-        st.query_params["auth_url"] = auth_url
-        st.rerun()
+        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to Authenticate</a>', unsafe_allow_html=True)
         
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
