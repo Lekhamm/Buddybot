@@ -392,9 +392,10 @@ def display_chat_history():
 
 # Main conversation flow starts here
 if 'auth_code' not in st.session_state:
-    if st.button("Authenticate to use the app"):
+    if st.button("Login"):
         auth_url = get_auth_url()
-        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to Authenticate</a>', unsafe_allow_html=True)
+        st.query_params["auth_url"] = auth_url
+        st.rerun()
         
 else:
     headers = get_auth_headers(st.session_state['auth_code'])
