@@ -429,7 +429,7 @@ else:
         site_name = st.text_input("SharePoint Site Name:")
 
         # Define items per page
-        ITEMS_PER_PAGE = 20
+        ITEMS_PER_PAGE = 5
 
         # Function to get paginated items
         def get_paginated_items(items_list, page, items_per_page=ITEMS_PER_PAGE):
