@@ -157,9 +157,6 @@ app = msal.ConfidentialClientApplication(
     verify=True
 )
 
-# Streamlit UI
-st.title("📂 Buddy Bot: Your Friendly Companion ")
-
 # Authentication flow
 def get_auth_url():
     auth_url = app.get_authorization_request_url(
@@ -512,7 +509,7 @@ else:
                     "assistant", "I'm sorry, I couldn't access the SharePoint site. Please check the site name and try again.")
 
         # Main conversation flow handling folder download requests and questions
-        if prompt := st.chat_input("You:"):
+        if prompt := st.text_input("You:"):
             add_message("user", prompt)
 
             if prompt.lower().startswith("q:"):
